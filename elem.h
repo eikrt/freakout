@@ -7,6 +7,11 @@ typedef enum {
     Def 
 } TileType; 
 
+typedef enum {
+    Stick,
+    StickOnce,
+    DefBuff,
+} BuffType;
 typedef struct {
     float x;
     float y;
@@ -25,13 +30,16 @@ typedef struct {
 typedef struct Ball {
         Point p;
         Point size;
+        BuffType buff;
         float vel;
         Vector dir;
+        
 } Ball;
 
 typedef struct Paddle {
         Point p;
         Point size;
+        BuffType buff;
         float vel;
         float dir;
 } Paddle;

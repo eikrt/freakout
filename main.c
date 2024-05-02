@@ -6,31 +6,29 @@
 #include "elem.h"
 #include "mov.h"
 #include "coll.h"
+#include "util.h"
 SDL_Window *window;
 SDL_Renderer *renderer;
 const MAP_WIDTH = 10;
-const MAP_HEIGHT = 8;
-const TILE_WIDTH= 64;
-const TILE_HEIGHT = 32;
+const MAP_HEIGHT = 5;
+const TILE_WIDTH= 32;
+const TILE_HEIGHT = 16;
 char map[] = {
-    'a','a','a','a','a','a','a','a','a','a',
-    'a','a','a','a','a','a','a','a','a','a',
-    'a','a','a','a','a','a','a','a','a','a',
-    'a','a','a','a','a','a','a','a','a','a',
-    'a','a','a','a','a','a','a','a','a','a',
-    'a','a','a','a','a','a','a','a','a','a',
-    'a','a','a','a','a','a','a','a','a','a',
-    'a','a','a','a','a','a','a','a','a','a',
 
+    'a','a','a','a','a','a','a','a','a','a',
+    'a','a','a','a','a','a','a','a','a','a',
+    'a','a','a','a','a','a','a','a','a','a',
+    'a','a','a','a','a','a','a','a','a','a',
+    'a','a','a','a','a','a','a','a','a','a',
 
 };
 
 Ball ball = {
-        {320, 360}, {8, 8}, 4.0, {1.0,1.0}
+        {320, 340}, {8, 8}, StickOnce, 4.0, {1.0,1.0}
 };
 
 Paddle paddle = {
-        {320, 460}, {128, 16}, 2.0, 0.0 
+        {320, 340}, {128, 16}, StickOnce, 2.0, 0.0 
 };
 
 int running = 1;
@@ -41,7 +39,7 @@ void game() {
         }
 
         window = SDL_CreateWindow("Breakout", SDL_WINDOWPOS_CENTERED,
-                                  SDL_WINDOWPOS_CENTERED, 640, 480,
+                                  SDL_WINDOWPOS_CENTERED, SCREEN_WIDTH, SCREEN_HEIGHT,
                                   SDL_WINDOW_SHOWN);
         if (window == NULL) {
                 printf("SDL_CreateWindow Error: %s\n", SDL_GetError());
@@ -55,7 +53,8 @@ void game() {
                 printf("SDL_CreateRenderer Error: %s\n", SDL_GetError());
                 SDL_Quit();
         }
-        
+        SDL_ShowCursor(0); 
+        SDL_SetWindowFullscreen(window, 1);
         Tile tiles[MAP_HEIGHT*MAP_WIDTH];
         int row=0;
         int col=0;
@@ -87,6 +86,12 @@ void game() {
                                 running = 0;
                         }
                         if (event.key.keysym.sym == SDLK_UP) {
+                        }
+                        if (event.type == SDL_MOUSEMOTION) {
+                            paddle.p.x = event.motion.x;
+                        }
+                        if (event.type == SDL_MOUSEBUTTONDOWN) {
+                                ball.buff = DefBuff;
                         }
                         if (event.type == SDL_KEYUP) {
                                 if (event.key.keysym.sym == SDLK_UP) {
@@ -121,28 +126,34 @@ void game() {
                         }
                 }
                 // move ball
-                moveBall(&ball, &paddle);
+                //
+                if (ball.buff != StickOnce) {
+                    moveBall(&ball, &paddle);
+                }
+                else {
+                        ball.p.x = paddle.p.x + paddle.size.x / 2;
+                }
                 SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
                 SDL_RenderClear(renderer);
 
                 // paddle
                 SDL_Rect paddleR = { paddle.p.x, paddle.p.y, paddle.size.x, paddle.size.y }; // x, y, width, height
-                SDL_SetRenderDrawColor(renderer, 0, 255, 0, 255); // Set color to red
+                SDL_SetRenderDrawColor(renderer, 0, 255, 0, 255); 
                 SDL_RenderFillRect(renderer, &paddleR);
 
                 for (int i = 0; i < MAP_WIDTH * MAP_HEIGHT; i++) {
                         Tile* tile = &tiles[i];
-                        collideWithTile(&ball, tile);
                         if (tile->alive == 0) {
                                 continue;
                         }
+                        collideWithTile(&ball, tile);
                         SDL_Rect tileR = { tile->p.x, tile->p.y, tile->size.x, tile->size.y }; // x, y, width, height
                         SDL_SetRenderDrawColor(renderer, 0, 0, 255, 255); // Set color to red
                         SDL_RenderFillRect(renderer, &tileR);
                 }
                 // ball
                 SDL_Rect ballR = { ball.p.x, ball.p.y, ball.size.y, ball.size.y }; // x, y, width, height
-                SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255); // Set color to red
+                SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255); 
                 SDL_RenderFillRect(renderer, &ballR);
                 SDL_RenderPresent(renderer);
         }

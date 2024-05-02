@@ -22,6 +22,7 @@ void moveBall(Ball* ball, Paddle* paddle) {
 
     int collide = collideWith(ball, paddle);
     if (collide == 0) {
+        
     }
     if (collide == 1) {
         bounce(ball, paddle);
