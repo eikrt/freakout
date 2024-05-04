@@ -2,7 +2,7 @@ CC = gcc
 CFLAGS = -Wall -Wextra -std=c99
 LDFLAGS = -lSDL2 -lm
 
-SRCS = util.h coll.c elem.c mov.c main.c 
+SRCS = util.h perlin.c draw.c coll.c elem.c mov.c main.c 
 OBJS = $(SRCS:.c=.o)
 	EXEC = freakout 
 

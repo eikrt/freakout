@@ -1,0 +1,9 @@
+#include <SDL2/SDL.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+#include <math.h>
+#include "elem.h"
+#include "mov.h"
+#include "coll.h"
+#include "draw.h"

@@ -42,6 +42,7 @@ typedef struct Paddle {
         BuffType buff;
         float vel;
         float dir;
+        int radius;
 } Paddle;
 
 Vector subtractPoints(Point p1, Point p2);

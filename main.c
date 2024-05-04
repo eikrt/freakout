@@ -1,25 +1,19 @@
-#include <SDL2/SDL.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <time.h>
-#include <math.h>
-#include "elem.h"
-#include "mov.h"
-#include "coll.h"
-#include "util.h"
+#include "main.h"
 SDL_Window *window;
 SDL_Renderer *renderer;
-const MAP_WIDTH = 10;
-const MAP_HEIGHT = 5;
-const TILE_WIDTH= 32;
-const TILE_HEIGHT = 16;
+
 char map[] = {
 
-    'a','a','a','a','a','a','a','a','a','a',
-    'a','a','a','a','a','a','a','a','a','a',
-    'a','a','a','a','a','a','a','a','a','a',
-    'a','a','a','a','a','a','a','a','a','a',
-    'a','a','a','a','a','a','a','a','a','a',
+    'a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a',
+    'a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a',
+    'a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a',
+    'a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a',
+    'a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a',
+    'a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a',
+    'a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a',
+    'a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a',
+    'a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a',
+    'a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a','a',
 
 };
 
@@ -28,7 +22,7 @@ Ball ball = {
 };
 
 Paddle paddle = {
-        {320, 340}, {128, 16}, StickOnce, 2.0, 0.0 
+        {320, 340}, {128, 16}, StickOnce, 2.0, 0.0, 64 
 };
 
 int running = 1;
@@ -59,16 +53,16 @@ void game() {
         int row=0;
         int col=0;
         for (int i = 0; i < MAP_HEIGHT * MAP_WIDTH; i++) {
-                if (col > MAP_WIDTH) {
+                if (col >= MAP_WIDTH) {
                         col = 0;
                         row++;
                 }
                 Tile tile = {
                         {
-                            col * TILE_WIDTH, row * TILE_HEIGHT
+                            col * 32, row * 16 
                         },
                         {
-                            TILE_WIDTH, TILE_HEIGHT
+                            32, 16 
                         },
                         Def,
                         1,
@@ -82,13 +76,12 @@ void game() {
                         if (event.type == SDL_QUIT) {
                                 running = 0;
                         }
-                        if (event.key.keysym.sym == SDLK_ESCAPE) {
-                                running = 0;
-                        }
                         if (event.key.keysym.sym == SDLK_UP) {
                         }
                         if (event.type == SDL_MOUSEMOTION) {
-                            paddle.p.x = event.motion.x;
+                            if (event.motion.x >= 0 && event.motion.x < SCREEN_WIDTH - paddle.size.x) {
+                                paddle.p.x = event.motion.x;
+                            }
                         }
                         if (event.type == SDL_MOUSEBUTTONDOWN) {
                                 ball.buff = DefBuff;
@@ -104,7 +97,10 @@ void game() {
                                 }
                         }
                         if (event.key.keysym.sym == SDLK_LEFT) {
+                            if (event.motion.x >= 0 && event.motion.x < SCREEN_WIDTH - paddle.size.x) {
                             paddle.p.x -= 16;
+
+                            }
                         }
 
                         if (event.type == SDL_KEYUP) {
@@ -112,7 +108,10 @@ void game() {
                                 }
                         }
                         if (event.key.keysym.sym == SDLK_RIGHT) {
-                            paddle.p.x += 16;
+                            if (event.motion.x >= 0 && event.motion.x < SCREEN_WIDTH - paddle.size.x) {
+                                paddle.p.x += 16;
+
+                            }
                         }
                         if (event.type == SDL_KEYUP) {
                                 if (event.key.keysym.sym == SDLK_RIGHT) {
@@ -136,20 +135,19 @@ void game() {
                 SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
                 SDL_RenderClear(renderer);
 
+                drawBG(renderer);
                 // paddle
                 SDL_Rect paddleR = { paddle.p.x, paddle.p.y, paddle.size.x, paddle.size.y }; // x, y, width, height
                 SDL_SetRenderDrawColor(renderer, 0, 255, 0, 255); 
                 SDL_RenderFillRect(renderer, &paddleR);
-
                 for (int i = 0; i < MAP_WIDTH * MAP_HEIGHT; i++) {
                         Tile* tile = &tiles[i];
                         if (tile->alive == 0) {
                                 continue;
                         }
+                        drawTile(tile, renderer);
                         collideWithTile(&ball, tile);
-                        SDL_Rect tileR = { tile->p.x, tile->p.y, tile->size.x, tile->size.y }; // x, y, width, height
-                        SDL_SetRenderDrawColor(renderer, 0, 0, 255, 255); // Set color to red
-                        SDL_RenderFillRect(renderer, &tileR);
+
                 }
                 // ball
                 SDL_Rect ballR = { ball.p.x, ball.p.y, ball.size.y, ball.size.y }; // x, y, width, height
@@ -162,6 +160,7 @@ void game() {
         SDL_Quit();
 }
 int main() {
+        initPerlin();
         game();
         return 1;
 }

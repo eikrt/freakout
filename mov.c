@@ -1,4 +1,11 @@
 #include "mov.h"
+
+Point normalizeCircle(Point point, Paddle* paddle) {
+    Point normalized;
+    normalized.x = (point.x - paddle->p.x + paddle->size.x/2) / paddle->radius;
+    normalized.y = (point.y - paddle->p.y + paddle->size.x/2) / paddle->radius;
+    return normalized;
+}
 Vector reflect(Vector incident, Vector normal) {
     Vector reflection;
     float dot = dotProduct(incident, normal);
