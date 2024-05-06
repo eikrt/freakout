@@ -1,2 +1,7 @@
 game_engine
 project/
+*.o
+*.js
+*.wasm
+*.html
+SDL*

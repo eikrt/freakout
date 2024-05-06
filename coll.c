@@ -9,8 +9,9 @@ int collideWith(Ball* this, Paddle* other) {
     
     return 0;
 }
-int collideWithTile(Ball* this, Tile* other) {
+int collideWithTile(Ball* this, Tile* other, Mix_Chunk* chunk) {
     if (this->p.x > other->p.x && this->p.x < other->p.x + other->size.x && this->p.y > other->p.y && this->p.y < other->p.y + other->size.y) {
+        Mix_PlayChannel(-1, chunk, 0);
         if (this->p.x - this->vel * this->dir.y < other->p.x) {
             Vector normal = {1,0};
             bounceV(this, normal);       

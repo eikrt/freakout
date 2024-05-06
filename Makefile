@@ -1,8 +1,8 @@
-CC = gcc
-CFLAGS = -Wall -Wextra -std=c99
-LDFLAGS = -lSDL2 -lm
+CC = gcc 
+CFLAGS = -ISDL-release-2.30.3/include/ -Wall -Wextra -std=c99
+LDFLAGS = -lSDL2 -lSDL -lSDL2_mixer -lm 
 
-SRCS = util.h perlin.c draw.c coll.c elem.c mov.c main.c 
+SRCS =  util.c perlin.c draw.c coll.c elem.c mov.c main.c 
 OBJS = $(SRCS:.c=.o)
 	EXEC = freakout 
 

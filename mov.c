@@ -25,13 +25,15 @@ void bounceV(Ball *ballp, Vector normal) {
     Vector r = reflect(ball.dir, normal);
     ballp->dir = r;
 }
-void moveBall(Ball* ball, Paddle* paddle) {
+void moveBall(Ball* ball, Paddle* paddle, Mix_Chunk* chunk) {
 
     int collide = collideWith(ball, paddle);
     if (collide == 0) {
         
     }
     if (collide == 1) {
+
+        Mix_PlayChannel(-1, chunk, 0);
         bounce(ball, paddle);
     }
     if (ball->p.x > 640 || ball->p.x < 0) {
