@@ -6,10 +6,10 @@ Point normalizeCircle(Point point, Paddle* paddle) {
     normalized.y = (point.y - paddle->p.y + paddle->size.x/2) / paddle->radius;
     return normalized;
 }
-Vector reflect(Vector incident, Vector normal) {
+Vector reflect(Vector incident, Vector normal, float slope) {
     Vector reflection;
     float dot = dotProduct(incident, normal);
-    reflection.x = -(incident.x - 2 * dot * normal.x);
+    reflection.x = -(incident.x -(2 + slope) * dot * normal.x);
     reflection.y = -(incident.y - 2 * dot * normal.y);
     return reflection;
 }
@@ -17,12 +17,12 @@ void bounce(Ball *ballp, void* o) {
     Ball ball = *ballp;
     struct Paddle *other = (struct Paddle *)o;
     Vector normal = calcNormal(other);
-    Vector r = reflect(ball.dir, normal);
+    Vector r = reflect(ball.dir, normal, (ball.p.x - (other->p.x + other->size.x)) /100);
     ballp->dir = r;
 }
 void bounceV(Ball *ballp, Vector normal) {
     Ball ball = *ballp;
-    Vector r = reflect(ball.dir, normal);
+    Vector r = reflect(ball.dir, normal, 0.0);
     ballp->dir = r;
 }
 void moveBall(Ball* ball, Paddle* paddle, Mix_Chunk* chunk) {

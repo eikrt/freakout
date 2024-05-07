@@ -2,21 +2,39 @@
 #define ELEM_H
 #include <time.h>
 #include <math.h>
+#include <stdlib.h>
 #include "elem.h"
 typedef enum {
-    Def 
+    Def,
+    Invulnerable,
+    Explosion,
+    Invisible, 
+    Three, 
+    Nonexistent, 
 } TileType; 
 
 typedef enum {
     Stick,
     StickOnce,
     DefBuff,
+    Wide,
+    Kill,
+    Shrink,
+    Explosive,
+    Soften,
+    Double,
+    Pen,
+    Laser,
+
 } BuffType;
+typedef enum {
+    Falling,
+    DefaultStatus,
+} Status;
 typedef struct {
     float x;
     float y;
 } Point;
-
 typedef struct {
     float x;
     float y;
@@ -24,7 +42,18 @@ typedef struct {
 typedef struct {
     Point p;
     Point size;
+    Vector vel;
+    float speed;
+    int alive;
+} Projectile;
+typedef struct {
+    Point p;
+    Point size;
+    Vector vel;
     TileType ttype;
+    BuffType buff;
+    Status status;
+    int hits;
     int alive;
 } Tile;
 typedef struct Ball {
@@ -33,6 +62,8 @@ typedef struct Ball {
         BuffType buff;
         float vel;
         Vector dir;
+        int explosive;
+        int pen;
         
 } Ball;
 
@@ -43,8 +74,9 @@ typedef struct Paddle {
         float vel;
         float dir;
         int radius;
+        int shoot;
 } Paddle;
-
+void fallTile(Tile* tile);
 Vector subtractPoints(Point p1, Point p2);
 Vector crossProduct(Vector v1, Vector v2);
 float dotProduct(Vector v1, Vector v2);

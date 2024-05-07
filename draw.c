@@ -20,30 +20,15 @@ long long currentTimeStamp() {
     long long milliseconds = te.tv_sec * 1000LL + te.tv_usec / 1000; // Calculate milliseconds
     return milliseconds;
 }
-void drawTile(Tile* tile, SDL_Renderer* renderer) {
-
-        #ifdef __EMSCRIPTEN__
-                SDL_Rect tileR = { tile->p.x, tile->p.y, 32, 16 }; // x, y, width, height
-                SDL_SetRenderDrawColor(renderer, 255, 255, 0, 255);
-                SDL_RenderFillRect(renderer, &tileR);
-        #else
-                for (int i = 0; i < 32; i++) {
-                    for (int j = 0; j < 16; j++) {
-                        SDL_Rect tileR = { tile->p.x + i, tile->p.y + j, 1, 1 }; // x, y, width, height
-                        unsigned int r = BASIC_TILE_BITMAP[i + j * 32][0];
-                        unsigned int g = BASIC_TILE_BITMAP[i + j * 32][1];
-                        unsigned int b = BASIC_TILE_BITMAP[i + j * 32][2];
-                        SDL_SetRenderDrawColor(renderer, r, g, b, 255);
-                        SDL_RenderFillRect(renderer, &tileR);
-                    } 
-                } 
-        #endif
-
+void drawTile(Tile* tile, SDL_Renderer* renderer, SDL_Texture* tex) {
+        SDL_Rect tileR = { tile->p.x, tile->p.y, 32, 16 }; // x, y, width, height
+        SDL_RenderCopy(renderer, tex, NULL, &tileR); 
 }
 void drawBG(SDL_Renderer* renderer) {
         #ifdef __EMSCRIPTEN__
             return;
         #endif
+        return;
         time_t t;
         time(&t);
         srand(time(NULL));

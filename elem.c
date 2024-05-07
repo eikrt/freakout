@@ -1,5 +1,24 @@
 #include "elem.h" 
+#include <stdio.h>
 
+
+void fallTile(Tile* tile) {
+    if (tile->status != Falling) {
+        return;
+    }
+    if (tile->p.x > 640) {
+
+            tile->vel.x = -tile->vel.x;
+    }
+    else if (tile->p.x < 0) {
+            tile->vel.x = -tile->vel.x;
+    }
+    if (tile->p.y < 0) {
+    }
+    tile->vel.y += 0.1;
+    tile->p.x += tile->vel.x;
+    tile->p.y += tile->vel.y;
+}
 Vector subtractPoints(Point p1, Point p2) {
     Vector result;
     result.x = p1.x - p2.x;
@@ -38,9 +57,8 @@ Vector calcNormal(Paddle* other) {
     return normal;
 }
 int randI() {
-    //    int random_number;
-      //  srand(time(NULL));
-   //     random_number = rand();
-   //     return random_number;
-   return 0;
+   int random_number;
+   srand(time(NULL));
+   random_number = rand();
+   return random_number;
 }
