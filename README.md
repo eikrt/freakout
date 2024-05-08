@@ -2,19 +2,8 @@
 
 ## Summary
 
-A ball and paddle game in the style of breakout.
+A ball and paddle game in the style of breakout. Playable in browser on [my website](https://eikrt.github.io/freakout).
 
-## Todos:
+## Dependecies
 
-Multiplayer with sockets
-
-Procedural graphics
-
-Audio
-
-More interesting paddle mechanics
-
-...
-
-And more!
-
+in shell.nix
