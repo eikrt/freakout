@@ -9,7 +9,9 @@ mkShell {
     SDL2_mixer
     SDL2_image
     SDL2_ttf
+    curlFull
     cmake
+    clang
     gdb
     emscripten
   ];
