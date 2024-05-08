@@ -3,6 +3,8 @@
 #include "elem.h"
 #include "coll.h"
 #include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
 #include "SDL2/SDL_mixer.h"
 Vector reflect(Vector incident, Vector normal, float slope);
 void bounce(Ball *ballp, void* o);

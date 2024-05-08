@@ -9,15 +9,19 @@ int collideWith(Ball* this, Paddle* other) {
     return 0;
 }
 int collideLaserWithTile(Ball* ball, Projectile* this, Tile* other, Mix_Chunk* chunk) {
-    if (this->p.x > other->p.x -1 && this->p.x < other->p.x + other->size.x +1 && this->p.y > other->p.y && this->p.y < other->p.y + other->size.y) {
-        Mix_PlayChannel(-1, chunk, 0);
+        if (other->status == Falling) {
+                return 0;
+        }
+    if (this->p.x > other->p.x - 2&& this->p.x < other->p.x + other->size.x + 2 && this->p.y > other->p.y && this->p.y < other->p.y + other->size.y) {
+            Mix_PlayChannel(-1, chunk, 0);
             other->hits--;
+            if (other->ttype == Explosion) {
+                other->hits = 0;
+                return 2;
+            }
             if (ball->pen == 0) {
                 other->hits = 0;
                 return 1;
-            }
-            if (other->ttype == Explosion) {
-                return 2;
             }
             if (other->hits <= 0) {
                 return 1;
@@ -28,7 +32,7 @@ int collideLaserWithTile(Ball* ball, Projectile* this, Tile* other, Mix_Chunk* c
 }
 int collidePaddleWithTile(Paddle* other, Tile* this, Mix_Chunk* chunk) {
 
-    if (this->p.x + this->size.x/2 > other->p.x && this->p.x + this->size.x/2 < other->p.x + other->size.x && this->p.y > other->p.y && this->p.y < other->p.y + other->size.y) {
+    if (this->p.x + this->size.x/2 > other->p.x - 8 && this->p.x + this->size.x/2 < other->p.x + other->size.x -8 && this->p.y > other->p.y && this->p.y < other->p.y + other->size.y) {
         return this->buff;
     }
     
@@ -42,10 +46,10 @@ int collideWithTile(Ball* this, Tile* other, Mix_Chunk* chunk) {
         Mix_PlayChannel(-1, chunk, 0);
         this->vel += 0.03;
         Vector normal = {0,0};
-        if (this->p.x - this->vel * this->dir.x < other->p.x - 3) {
+        if (this->p.x - this->vel * this->dir.x < other->p.x - 1) {
             normal = (Vector) {1,0};
         }
-        else if (this->p.x - this->vel * this->dir.x > other->p.x + other->size.x + 3) {
+        else if (this->p.x - this->vel * this->dir.x > other->p.x + other->size.x + 1) {
             normal = (Vector){1,0};
         }
         else if (this->p.y - this->vel * this->dir.x < other->p.y + 2) {

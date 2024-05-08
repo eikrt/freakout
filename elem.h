@@ -64,6 +64,7 @@ typedef struct Ball {
         Vector dir;
         int explosive;
         int pen;
+        int alive;
         
 } Ball;
 

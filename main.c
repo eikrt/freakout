@@ -1,19 +1,23 @@
 #include "main.h"
 #ifdef __EMSCRIPTEN__
 #include <emscripten.h>
+#include <emscripten/fetch.h>
 #endif
+#include <unistd.h>
 SDL_Window *window;
 SDL_Renderer *renderer;
 int level = 0;
 int tilesLeft = 0;
 int score = 0;
 int lives = 3;
-Ball ball = {
-        {320, 340}, {8, 8}, StickOnce, 4.0, {1.0,1.0},0,0
-};
+int ballsSize = 32;
+int ballsIndex = 1;
+Ball balls[32] = {{
+        {320, 340}, {8, 8}, StickOnce, 4.0, {1.0,1.0},0,0,0
+}};
 
 Paddle paddle = {
-        {320, 340}, {64, 16}, StickOnce, 2.0, 0.0, 64,0 
+        {320, 340}, {64, 16}, StickOnce, 2.0, 0.0, 64,1 
 };
 static const int projectilesSize = 16;
 Projectile projectiles[16]; 
@@ -100,29 +104,32 @@ void initTiles() {
         }
 }
 void softenBricks() {
-        int row=0;
-        int col=0;
         for (int i = 0; i < MAP_HEIGHT * MAP_WIDTH; i++) {
                 tiles[i].hits = 1;
         }
-
 }
 void resetGame() {
-        ball.p.x = 320;
-        ball.p.y = 340;
-        ball.buff = StickOnce;
+        ballsIndex = 1;
+        for (int i = 0; i < ballsIndex; i++) {
+            Ball* ball = &balls[i];
+            ball->p.x = 320;
+            ball->p.y = 340;
+            ball->buff = StickOnce;
+            ball->pen = 0;
+            ball->vel = 4;
+            ball->explosive = 0;
+            ball->buff = StickOnce;
+            ball->alive = 1;
+        } 
         paddle.p.x = 320;
         paddle.p.y = 340;
         paddle.size.x = 64;
         paddle.shoot = 0;
-        ball.pen = 0;
-        ball.vel = 4;
-        ball.explosive = 0;
-        ball.buff = StickOnce;
         levelTransparency = 255;
         initTiles();
 }
 void game() {
+        int once = 0;
         if (SDL_Init(SDL_INIT_VIDEO) != 0) {
                 printf("SDL_Init Error: %s\n", SDL_GetError());
         }
@@ -162,6 +169,7 @@ void game() {
                 printf("SDL_CreateRenderer Error: %s\n", SDL_GetError());
                 SDL_Quit();
         }
+        SDL_SetRelativeMouseMode(SDL_TRUE);
         SDL_Texture* paddleTex = IMG_LoadTexture(renderer, "assets/paddle.png");
         SDL_Texture* paddleLaserTex = IMG_LoadTexture(renderer, "assets/paddle_laser.png");
         SDL_Texture* ballTex = IMG_LoadTexture(renderer, "assets/ball.png");
@@ -178,8 +186,10 @@ void game() {
         initTiles();
         TTF_Init();
         TTF_Font* font = TTF_OpenFont("assets/8bitOperatorPlus-Regular.ttf", 8);
-
+        float reloadChange = 0;
+        float reloadTime = 512;
         while (running) {
+                reloadChange += 10;
                 if (levelTransparency > 1) {
                     levelTransparency--;
                 }
@@ -189,18 +199,23 @@ void game() {
                 sprintf(scoreChar, "SCORE: %i", score);
                 char *levelChar= (char*)malloc(64* sizeof(char));
                 sprintf(levelChar, "Level %i: %s", level, levelNames[level]);
+                char *gameOverChar= (char*)malloc(64* sizeof(char));
+                sprintf(gameOverChar, "Game Over! Score: %i", score);
+                char *gameDoneChar = (char*)malloc(64* sizeof(char));
+                sprintf(gameDoneChar, "Game Won! Score: %i", score);
                 SDL_Surface* tilesLeftSurface = TTF_RenderText_Solid(font,tilesChar , (SDL_Color){255,255,255,255});
                 SDL_Texture* tlText = SDL_CreateTextureFromSurface(renderer, tilesLeftSurface);
                 SDL_Surface* scoreSurface= TTF_RenderText_Solid(font, scoreChar, (SDL_Color){255,255,255,255});
                 SDL_Texture* scoreText = SDL_CreateTextureFromSurface(renderer, scoreSurface);
                 SDL_Surface* levelSurface= TTF_RenderText_Solid(font, levelChar, (SDL_Color){255,255,255,levelTransparency});
                 SDL_Texture* levelText = SDL_CreateTextureFromSurface(renderer, levelSurface);
-                SDL_Surface* gameOverSurface= TTF_RenderText_Solid(font, "Game Over!", (SDL_Color){255,255,255,255});
+                SDL_Surface* gameOverSurface= TTF_RenderText_Solid(font, gameOverChar, (SDL_Color){255,255,255,255});
                 SDL_Texture* gameOverText = SDL_CreateTextureFromSurface(renderer, gameOverSurface);
-                SDL_Surface* gameDoneSurface= TTF_RenderText_Solid(font, "Game Won!", (SDL_Color){255,255,255,255});
+                SDL_Surface* gameDoneSurface= TTF_RenderText_Solid(font,gameDoneChar, (SDL_Color){255,255,255,255});
                 SDL_Texture* gameDoneText = SDL_CreateTextureFromSurface(renderer, gameDoneSurface);
                 SDL_Event event;
                 while (SDL_PollEvent(&event)) {
+                        
                         if (event.type == SDL_QUIT) {
                                 running = 0;
                         }
@@ -212,7 +227,8 @@ void game() {
                             }
                         }
                         if (event.type == SDL_MOUSEBUTTONDOWN) {
-                                ball.buff = DefBuff;
+                                for (int i = 0; i < ballsIndex; i++)
+                                    balls[i].buff = DefBuff;
                         }
                         if (event.type == SDL_KEYUP) {
                                 if (event.key.keysym.sym == SDLK_UP) {
@@ -241,7 +257,7 @@ void game() {
 
                             }
                         }
-                        if (event.type == SDL_KEYDOWN) {
+                        if (event.type == SDL_KEYDOWN|| event.type == SDL_MOUSEBUTTONDOWN) {
                                 if (event.key.keysym.sym == SDLK_ESCAPE) {
                                 }
                                 if (event.key.keysym.sym == SDLK_f) {
@@ -251,18 +267,19 @@ void game() {
                                         level++;
                                         resetGame();
                                 }
-                                if (event.key.keysym.sym == SDLK_SPACE) {
+                                if ((event.key.keysym.sym == SDLK_SPACE || event.type == SDL_MOUSEBUTTONDOWN) && reloadChange > reloadTime) {
+                                        reloadChange = 0;
                                         if (lives <= 0) {
-                                                resetGame();
                                                 level = 0;
                                                 score = 0;
                                                 lives = 3;
+                                                resetGame();
                                                 // todo! post score
                                         }
                                         if (paddle.shoot == 1) {
                                                 Mix_PlayChannel(-1, laserPing, 0);
                                                 projectiles[projIndex] = (Projectile) {
-                                                    {paddle.p.x + paddle.size.x/2, paddle.p.y},{3,7}, {0,-1}, 10, 1 
+                                                    {paddle.p.x + paddle.size.x/2, paddle.p.y},{3,7}, {0,-1}, 8, 1 
 
                                                 };
                                                 projIndex++;
@@ -279,11 +296,16 @@ void game() {
                 }
                 // move ball
                 //
-                if (ball.buff != StickOnce) {
-                    moveBall(&ball, &paddle, ping);
+                for (int i = 0; i < ballsIndex; i++) {
+                        if (balls[i].alive == 0) {
+                                continue;
+                        }
+                if (balls[i].buff != StickOnce) {
+                    moveBall(&balls[i], &paddle, ping);
                 }
                 else {
-                        ball.p.x = paddle.p.x + paddle.size.x / 2;
+                        balls[i].p.x = paddle.p.x + paddle.size.x / 2;
+                }
                 }
                 SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
                 SDL_RenderClear(renderer);
@@ -313,10 +335,19 @@ void game() {
                                 if (p->alive == 0) {
                                         continue;
                                 }
-                                int lCollision= collideLaserWithTile(&ball, p, tile, tilePing);
-                                if (lCollision) {
+                                for (int i = 0; i < ballsIndex; i++) {
+                        if (balls[i].alive == 0) {
+                                continue;
+                        }
+                                int lCollision = collideLaserWithTile(&balls[i], p, tile, tilePing);
+                                if (lCollision == 2) {
+                                    p->alive = 0;
+                                    explode(tile, explosionPing);
+                                    score += 100;
+                                }
+                                else if (lCollision == 1) {
                                         tile->hits--;
-                                        if (ball.pen == 0) {
+                                        if (balls[i].pen == 0) {
                                             p->alive = 0;
                                         }
                                         if (tile->hits <= 0 && tiles->ttype != Explosion && tile->status != Falling) {
@@ -325,19 +356,15 @@ void game() {
                                         }
                                 }
 
-                                if (lCollision == 2) {
-                                    explode(tile, explosionPing);
-                                    score += 100;
-                                }
                                 
+                            }
                         }
                         if (tile->alive == 0) {
                                 tile->vel.y = -4;
-                                tile->vel.x = -2 + randI() % 4;
+                                tile->vel.x = -2 + rand() % 4;
                                 tile->status = Falling;
                                 tile->alive = 1;
-                                int rand = randI();
-                                int r = randI() % 10;
+                                int r = rand() % 30;
                                 if (r == 0) {
                                     tile->buff = Wide; 
                                 }
@@ -396,14 +423,20 @@ void game() {
 
                             drawTile(tile, renderer, buffTex);
                         }
-                        int collision = collideWithTile(&ball, tile, tilePing);
-                        if (collision == 2) {
-                            explode(tile, explosionPing);
-                            score += 100;
+                        for (int i = 0; i < ballsIndex; i++) {
+                        if (balls[i].alive == 0) {
+                                continue;
                         }
-                        if (collision == 1 && tile->status != Falling) {
-                            score += 25;
-                        } 
+                                int collision = collideWithTile(&balls[i], tile, tilePing);
+
+                                if (collision == 2) {
+                                    explode(tile, explosionPing);
+                                    score += 100;
+                                }
+                                if (collision == 1 && tile->status != Falling) {
+                                    score += 25;
+                                } 
+                        }
                         BuffType coll = collidePaddleWithTile(&paddle, tile, buffPing); 
                         if (coll == Wide) {
 
@@ -421,13 +454,21 @@ void game() {
                         else if (coll == Explosive) {
 
                                 Mix_PlayChannel(-1, buffPing, 0);
-                                ball.explosive = 1;
+                                for (int i = 0; i < ballsIndex; i++)
+                        if (balls[i].alive == 0) {
+                                continue;
+                        }
+                                balls[i].explosive = 1;
 
                         }
                         else if (coll == Pen) {
 
                                 Mix_PlayChannel(-1, buffPing, 0);
-                                ball.pen = 1;
+                                for (int i = 0; i < ballsIndex; i++)
+                        if (balls[i].alive == 0) {
+                                continue;
+                        }
+                                balls[i].pen = 1;
 
                         }
                         else if (coll == Soften) {
@@ -437,8 +478,13 @@ void game() {
                         }
                         else if (coll == Double) {
                                 Mix_PlayChannel(-1, buffPing, 0);
+                                ballsIndex++;
+                                balls[ballsIndex] = (Ball){balls[ballsIndex].p, {8, 8}, DefBuff, 4.0, {1.0,1.0},0,0,1
+}; 
+                                
                         }
                         else if (coll == Laser) {
+                                Mix_PlayChannel(-1, buffPing, 0);
                                 paddle.shoot = 1;
                         }
                         else if (coll == Kill) {
@@ -452,12 +498,28 @@ void game() {
                                 paddle.size.x += 8;
 
                         }
-                        if (ball.p.y > SCREEN_HEIGHT) {
-                                Mix_PlayChannel(-1, deathPing, 0);
-                                resetGame();
-                                lives--;
+                        for (int i = 0; i < ballsIndex; i++) {
+                        if (balls[i].alive == 0) {
+                                continue;
                         }
-                }
+                        if (balls[i].p.y > SCREEN_HEIGHT) {
+                                balls[i].alive = 0;
+                        }
+
+                        }
+                        int allBallsAlive = 0;
+                        for (int i = 0; i < ballsIndex; i++) {
+                                if (balls[i].alive == 1) {
+                                        allBallsAlive = 1;
+                                } 
+                        }
+                        if (allBallsAlive == 0) {
+                            Mix_PlayChannel(-1, deathPing, 0);
+                            resetGame();
+                            lives--;
+
+                        }
+}
 
                 if (tilesLeft <= 0) {
                     level++;
@@ -476,14 +538,19 @@ void game() {
                 }
 
                 // ball
-                SDL_Rect ballR = { ball.p.x, ball.p.y, ball.size.y, ball.size.y }; 
-                SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255); 
-                SDL_RenderCopy(renderer, ballTex, NULL, &ballR); 
+                for (int i = 0; i < ballsIndex; i++) {
+                        if (balls[i].alive == 0) {
+                                continue;
+                        }
+                        SDL_Rect ballR = { balls[i].p.x, balls[i].p.y, balls[i].size.y, balls[i].size.y }; 
+                        SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255); 
+                        SDL_RenderCopy(renderer, ballTex, NULL, &ballR); 
+                }
                 // hud
-                SDL_Rect tlTextRect = {2, 0, 64, 30};
+                SDL_Rect tlTextRect = {2, 0, 74, 30};
                 SDL_RenderCopy(renderer, tlText, NULL, &tlTextRect);
 
-                SDL_Rect scoreTextRect = {2,24, 40, 30};
+                SDL_Rect scoreTextRect = {2,24, 50, 30};
                 SDL_RenderCopy(renderer, scoreText, NULL, &scoreTextRect);
 
                 SDL_Rect levelTextRect= {SCREEN_WIDTH/2-34,SCREEN_HEIGHT/2+70, 80, 30};
@@ -492,19 +559,73 @@ void game() {
                     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
                     SDL_RenderClear(renderer);
                     SDL_RenderCopy(renderer, bgTex, NULL, NULL);
-                    SDL_Rect gameOverTextRect = {SCREEN_WIDTH/2-34,SCREEN_HEIGHT/2+70, 80, 30};
+                    SDL_Rect gameOverTextRect = {SCREEN_WIDTH/2-70,SCREEN_HEIGHT/2+70, 160, 30};
                     SDL_RenderCopy(renderer, gameOverText, NULL, &gameOverTextRect);
                 }
                 if (level >= 8) {
                     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
                     SDL_RenderClear(renderer);
                     SDL_RenderCopy(renderer, bgTex, NULL, NULL);
-                    SDL_Rect gameDoneScreenRect = {SCREEN_WIDTH/2-34,SCREEN_HEIGHT/2+70, 80, 30};
+                    SDL_Rect gameDoneScreenRect = {SCREEN_WIDTH/2-70,SCREEN_HEIGHT/2+70, 160, 30};
                     SDL_RenderCopy(renderer, gameDoneText, NULL, &gameDoneScreenRect);
+                    level = 8;
+                    /*char* URL = "http://51.20.143.95/scores";
+
+                    if (once == 0) {
+                    once = 1;
+                    #ifdef __EMSCRIPTEN__
+                            emscripten_fetch_attr_t attr;
+                            emscripten_fetch_attr_init(&attr);
+                            sprintf(attr.requestMethod, "POST");
+                            strcpy(attr.requestMethod, "Content-Type: application/json");
+                            attr.attributes = EMSCRIPTEN_FETCH_LOAD_TO_MEMORY;
+                            attr.userData = NULL;
+                            char str2[64];
+                            sprintf(str2, "{\"name\":\"%s\",\"score\":\"%i\"}", "Eino", score);
+                            const char *post_data = str2; 
+                            attr.requestData = post_data;
+                            emscripten_fetch(&attr, URL);
+
+                    #else
+                    CURL *curl = NULL;
+                    CURLcode res;
+                    curl = curl_easy_init();
+                    if (curl) {
+                        // Set the URL
+                        curl_easy_setopt(curl, CURLOPT_URL, URL);
+
+                        // Set the Content-Type header
+                        struct curl_slist *headers = NULL;
+                        headers = curl_slist_append(headers, "Content-Type: application/json");
+                        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+
+                        // Set the POST data
+                        char str[64];
+                        sprintf(str, "{\"name\":\"%s\"\,\"score\":\"%i\"}", "Eino", score);
+                        const char *post_data = str; 
+                        curl_easy_setopt(curl, CURLOPT_POSTFIELDS, post_data);
+
+                        // Perform the POST request
+                        res = curl_easy_perform(curl);
+                        if (res != CURLE_OK) {
+                            fprintf(stderr, "curl_easy_perform() failed: %s\n", curl_easy_strerror(res));
+                        }
+
+                        // Cleanup
+                        curl_slist_free_all(headers);
+                        curl_easy_cleanup(curl);
+                    } else {
+                        fprintf(stderr, "Error initializing libgnurl\n");
+                        return 1;
+                    }
+                    #endif
+                }*/
                 }
                 SDL_RenderPresent(renderer);
                 #ifdef __EMSCRIPTEN__
                 emscripten_sleep(10);
+                #else
+                sleep(0.01);
                 #endif
         }
         SDL_DestroyRenderer(renderer);
@@ -512,6 +633,8 @@ void game() {
         SDL_Quit();
 }
 int main() {
+        time_t t;
+        srand(time(&t));
         initPerlin();
         #ifdef __EMSCRIPTEN__
         emscripten_set_main_loop(game, 0, 1);
