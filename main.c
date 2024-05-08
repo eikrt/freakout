@@ -12,6 +12,8 @@ int score = 0;
 int lives = 3;
 int ballsSize = 32;
 int ballsIndex = 1;
+static int collideLimitChange = 0;
+const int collideLimitTime = 0;
 Ball balls[32] = {{
         {320, 340}, {8, 8}, StickOnce, 4.0, {1.0,1.0},0,0,0
 }};
@@ -143,10 +145,14 @@ void game() {
         Mix_Chunk* ping = NULL;
         Mix_Chunk* tilePing = NULL;
         Mix_Chunk* deathPing= NULL;
+        Mix_Chunk* lostPing= NULL;
         Mix_Chunk* buffPing = NULL;
         Mix_Chunk* explosionPing = NULL;
         Mix_Chunk* successPing = NULL;
         Mix_Chunk* laserPing = NULL;
+        Mix_Chunk* pongPing = NULL;
+        Mix_Chunk* victoryPing = NULL;
+        Mix_Chunk* crackPing = NULL;
         ping = Mix_LoadWAV( "assets/ping.wav" );
         tilePing = Mix_LoadWAV( "assets/klo.wav" );
         deathPing = Mix_LoadWAV("assets/glissando_high_low.wav");
@@ -154,6 +160,10 @@ void game() {
         explosionPing = Mix_LoadWAV("assets/explosion_1.wav");
         successPing = Mix_LoadWAV("assets/glissando_tenor.wav");
         laserPing = Mix_LoadWAV("assets/ring.wav");
+        lostPing = Mix_LoadWAV("assets/explosion_3.wav");
+        victoryPing = Mix_LoadWAV("assets/victory.wav");
+        pongPing = Mix_LoadWAV("assets/pong.wav");
+        crackPing = Mix_LoadWAV("assets/crack.wav");
         window = SDL_CreateWindow("FreakOut", SDL_WINDOWPOS_CENTERED,
                                   SDL_WINDOWPOS_CENTERED, SCREEN_WIDTH, SCREEN_HEIGHT,
                                   SDL_WINDOW_SHOWN);
@@ -301,12 +311,13 @@ void game() {
                                 continue;
                         }
                 if (balls[i].buff != StickOnce) {
-                    moveBall(&balls[i], &paddle, ping);
+                    moveBall(&balls[i], &paddle, ping, pongPing);
                 }
                 else {
                         balls[i].p.x = paddle.p.x + paddle.size.x / 2;
                 }
                 }
+
                 SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
                 SDL_RenderClear(renderer);
                 SDL_RenderCopy(renderer, bgTex, NULL, NULL);
@@ -321,6 +332,7 @@ void game() {
                     SDL_RenderCopy(renderer, paddleTex, NULL, &paddleR); 
                 }
                 tilesLeft = 0;
+                collideLimitChange += 10;
                 for (int i = 0; i < MAP_WIDTH * MAP_HEIGHT; i++) {
                         Tile* tile = &tiles[i];
                         if (tile->ttype == Nonexistent) {
@@ -423,19 +435,26 @@ void game() {
 
                             drawTile(tile, renderer, buffTex);
                         }
+                        if (collideLimitChange > collideLimitTime) {
                         for (int i = 0; i < ballsIndex; i++) {
                         if (balls[i].alive == 0) {
                                 continue;
                         }
                                 int collision = collideWithTile(&balls[i], tile, tilePing);
-
                                 if (collision == 2) {
+                                collideLimitChange = 0;
                                     explode(tile, explosionPing);
                                     score += 100;
                                 }
                                 if (collision == 1 && tile->status != Falling) {
+                                collideLimitChange = 0;
                                     score += 25;
+                                if (tile->ttype == Invisible) {
+                                    Mix_PlayChannel(-1, crackPing, 0);
+                                }
                                 } 
+
+                            }
                         }
                         BuffType coll = collidePaddleWithTile(&paddle, tile, buffPing); 
                         if (coll == Wide) {
@@ -504,6 +523,7 @@ void game() {
                         }
                         if (balls[i].p.y > SCREEN_HEIGHT) {
                                 balls[i].alive = 0;
+                                Mix_PlayChannel(-1, lostPing, 0);
                         }
 
                         }
@@ -569,6 +589,10 @@ void game() {
                     SDL_Rect gameDoneScreenRect = {SCREEN_WIDTH/2-70,SCREEN_HEIGHT/2+70, 160, 30};
                     SDL_RenderCopy(renderer, gameDoneText, NULL, &gameDoneScreenRect);
                     level = 8;
+                    if (once == 0) {
+                            once = 1;
+                            Mix_PlayChannel(-1, victoryPing, 0);
+                    }
                     /*char* URL = "http://51.20.143.95/scores";
 
                     if (once == 0) {

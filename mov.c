@@ -13,28 +13,35 @@ Vector reflect(Vector incident, Vector normal, float slope) {
     reflection.y = -(incident.y - 2 * dot * normal.y);
     return reflection;
 }
-void bounce(Ball *ballp, void* o) {
+void bounce(Ball *ballp, void* o, int reverse) {
     Ball ball = *ballp;
     struct Paddle *other = (struct Paddle *)o;
     Vector normal = calcNormal(other);
-    Vector r = reflect(ball.dir, normal, (ball.p.x - (other->p.x + other->size.x)) /100);
-    ballp->dir = r;
+    Vector r = reflect(ball.dir, normal, (ball.p.x - (other->p.x + other->size.x)) /64);
+    ballp->dir.y = r.y * reverse;
+    ballp->dir.x = r.x;
 }
 void bounceV(Ball *ballp, Vector normal) {
     Ball ball = *ballp;
     Vector r = reflect(ball.dir, normal, 0.0);
     ballp->dir = r;
 }
-void moveBall(Ball* ball, Paddle* paddle, Mix_Chunk* chunk) {
+void moveBall(Ball* ball, Paddle* paddle, Mix_Chunk* chunk, Mix_Chunk* chunk2) {
 
     int collide = collideWith(ball, paddle);
     if (collide == 0) {
         
     }
-    if (collide == 1) {
+    else if (collide == 1) {
 
         Mix_PlayChannel(-1, chunk, 0);
-        bounce(ball, paddle);
+        bounce(ball, paddle, 1);
+    }
+    else if (collide == 2) {
+
+        Mix_PlayChannel(-1, chunk2, 0);
+        
+        bounce(ball, paddle, -1);
     }
     if (ball->p.x > 640 || ball->p.x < 0) {
             Vector normal = {1,0};
