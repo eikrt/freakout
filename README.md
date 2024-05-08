@@ -6,4 +6,8 @@ A ball and paddle game in the style of breakout. Playable in browser on [my webs
 
 ## Dependecies
 
-in shell.nix
+Most in shell.nix
+
+also
+
+SDL_mixer 2.6.3
