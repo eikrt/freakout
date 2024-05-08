@@ -147,6 +147,7 @@ void game() {
         Mix_Chunk* deathPing= NULL;
         Mix_Chunk* lostPing= NULL;
         Mix_Chunk* buffPing = NULL;
+        Mix_Chunk* debuffPing = NULL;
         Mix_Chunk* explosionPing = NULL;
         Mix_Chunk* successPing = NULL;
         Mix_Chunk* laserPing = NULL;
@@ -157,6 +158,7 @@ void game() {
         tilePing = Mix_LoadWAV( "assets/klo.wav" );
         deathPing = Mix_LoadWAV("assets/glissando_high_low.wav");
         buffPing = Mix_LoadWAV("assets/glissando_up.wav");
+        debuffPing = Mix_LoadWAV("assets/bad.wav");
         explosionPing = Mix_LoadWAV("assets/explosion_1.wav");
         successPing = Mix_LoadWAV("assets/glissando_tenor.wav");
         laserPing = Mix_LoadWAV("assets/ring.wav");
@@ -198,6 +200,7 @@ void game() {
         TTF_Font* font = TTF_OpenFont("assets/8bitOperatorPlus-Regular.ttf", 8);
         float reloadChange = 0;
         float reloadTime = 512;
+        int paused = 0;
         while (running) {
                 reloadChange += 10;
                 if (levelTransparency > 1) {
@@ -224,7 +227,27 @@ void game() {
                 SDL_Surface* gameDoneSurface= TTF_RenderText_Solid(font,gameDoneChar, (SDL_Color){255,255,255,255});
                 SDL_Texture* gameDoneText = SDL_CreateTextureFromSurface(renderer, gameDoneSurface);
                 SDL_Event event;
-                while (SDL_PollEvent(&event)) {
+                if (paused == 1){
+                while (SDL_PollEvent(&event) ) {
+
+                        if (event.type == SDL_QUIT) {
+                                running = 0;
+                        }
+                        if (event.type == SDL_KEYDOWN|| event.type == SDL_MOUSEBUTTONDOWN) {
+                                if (event.key.keysym.sym == SDLK_ESCAPE) {
+                                }
+                                if (event.key.keysym.sym == SDLK_f) {
+                                    SDL_SetWindowFullscreen(window, 1);
+                                }
+                                if (event.key.keysym.sym == SDLK_p) {
+                                    paused = 0;
+                                }
+
+                    }
+                }
+                }
+                else
+                while (SDL_PollEvent(&event) && paused == 0) {
                         
                         if (event.type == SDL_QUIT) {
                                 running = 0;
@@ -277,7 +300,10 @@ void game() {
                                         level++;
                                         resetGame();
                                 }
-                                if ((event.key.keysym.sym == SDLK_SPACE || event.type == SDL_MOUSEBUTTONDOWN) && reloadChange > reloadTime) {
+                                if (event.key.keysym.sym == SDLK_p) {
+                                        paused = 1;
+                                }
+                                if ((event.key.keysym.sym == SDLK_SPACE || event.type == SDL_MOUSEBUTTONDOWN) && reloadChange > reloadTime && paused == 0) {
                                         reloadChange = 0;
                                         if (lives <= 0) {
                                                 level = 0;
@@ -303,6 +329,9 @@ void game() {
                                 if (event.key.keysym.sym == SDLK_SPACE) {
                                 }
                         }
+                }
+                if (paused) {
+                        continue;
                 }
                 // move ball
                 //
@@ -372,11 +401,11 @@ void game() {
                             }
                         }
                         if (tile->alive == 0) {
-                                tile->vel.y = -4;
+                                tile->vel.y = -2.5;
                                 tile->vel.x = -2 + rand() % 4;
                                 tile->status = Falling;
                                 tile->alive = 1;
-                                int r = rand() % 30;
+                                int r = rand() % 42;
                                 if (r == 0) {
                                     tile->buff = Wide; 
                                 }
@@ -461,12 +490,13 @@ void game() {
 
                                 Mix_PlayChannel(-1, buffPing, 0);
                                 paddle.size.x += 8;
+                                paddle.p.x -= 4;
 
                         }
 
                         else if (coll == Shrink) {
 
-                                Mix_PlayChannel(-1, buffPing, 0);
+                                Mix_PlayChannel(-1, debuffPing, 0);
                                 paddle.size.x -= 8;
 
                         }
@@ -483,12 +513,14 @@ void game() {
                         else if (coll == Pen) {
 
                                 Mix_PlayChannel(-1, buffPing, 0);
-                                for (int i = 0; i < ballsIndex; i++)
-                        if (balls[i].alive == 0) {
-                                continue;
-                        }
-                                balls[i].pen = 1;
+                                for (int i = 0; i < ballsIndex; i++) {
+                                if (balls[i].alive == 0) {
+                                        continue;
+                                }
+                                    balls[i].pen = 1;
 
+
+                                }
                         }
                         else if (coll == Soften) {
 
@@ -521,7 +553,7 @@ void game() {
                         if (balls[i].alive == 0) {
                                 continue;
                         }
-                        if (balls[i].p.y > SCREEN_HEIGHT) {
+                        if (balls[i].p.y > SCREEN_HEIGHT - 8) {
                                 balls[i].alive = 0;
                                 Mix_PlayChannel(-1, lostPing, 0);
                         }
@@ -569,8 +601,9 @@ void game() {
                 // hud
                 SDL_Rect tlTextRect = {2, 0, 74, 30};
                 SDL_RenderCopy(renderer, tlText, NULL, &tlTextRect);
-
-                SDL_Rect scoreTextRect = {2,24, 50, 30};
+                char scoreStr[64];
+                sprintf(scoreStr, "%i", score);
+                SDL_Rect scoreTextRect = {2,24, 50 + strlen(scoreStr), 30};
                 SDL_RenderCopy(renderer, scoreText, NULL, &scoreTextRect);
 
                 SDL_Rect levelTextRect= {SCREEN_WIDTH/2-34,SCREEN_HEIGHT/2+70, 80, 30};

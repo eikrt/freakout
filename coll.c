@@ -52,7 +52,7 @@ int collideWithTile(Ball* this, Tile* other, Mix_Chunk* chunk) {
         if (other->ttype != Invisible) {
             Mix_PlayChannel(-1, chunk, 0);
         }
-        this->vel += 0.03;
+        this->vel += 0.02;
         Vector normal = {0,0};
         if (this->dir.y > 0.0 && this->dir.y > 0) {
             if (this->p.x - this->vel * this->dir.y < other->p.x + 8) {

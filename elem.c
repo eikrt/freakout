@@ -15,7 +15,7 @@ void fallTile(Tile* tile) {
     }
     if (tile->p.y < 0) {
     }
-    tile->vel.y += 0.1;
+    tile->vel.y += 0.05;
     tile->p.x += tile->vel.x;
     tile->p.y += tile->vel.y;
 }
